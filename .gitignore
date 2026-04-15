@@ -1,0 +1,38 @@
+# Environment
+.env
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Token cache / runtime data
+.token_cache.json
+.intensity_history.json
+portfolio.json
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
