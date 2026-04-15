@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(python3 -c \"import aiohttp\")",
+      "Bash(pip3 list *)",
+      "Bash(pip3 install *)"
+    ]
+  }
+}

@@ -36,6 +36,19 @@ st.markdown("""
 <style>
     .block-container { max-width: 1100px; }
 
+    /* 모바일 반응형 */
+    @media (max-width: 768px) {
+        .block-container { padding-left: 1rem; padding-right: 1rem; }
+        .ask-cell, .bid-cell { font-size: 0.75em !important; }
+        .bar-ask, .bar-bid { display: none; }
+        [data-testid="stMetric"] { padding: 4px 0; }
+        [data-testid="stMetricLabel"] { font-size: 0.7em; }
+        [data-testid="stMetricValue"] { font-size: 0.9em; }
+        .summary-box { font-size: 0.85em; padding: 10px 12px; }
+        .analysis-title { font-size: 0.9em; }
+        .analysis-detail { font-size: 0.8em; }
+    }
+
     .signal-buy {
         background: linear-gradient(135deg, #0d4d1a, #1a6b2a);
         color: #ffffff; padding: 12px 20px; border-radius: 10px;
@@ -240,19 +253,20 @@ async def fetch_single_stock(
 def render_orderbook(ob: Orderbook, holding: StockHolding | None = None):
     """호가창 렌더링"""
 
-    # 1행: 현재가 / 전일대비 / 체결강도 / 매수비중
     pct = ob.change_pct
     pct_str = f"+{pct:.2f}%" if pct > 0 else f"{pct:.2f}%"
     ti = ob.trading_intensity
 
-    c1, c2, c3, c4 = st.columns(4)
+    # 시세 카드 (2열씩 배치 → 모바일 친화)
+    c1, c2 = st.columns(2)
     c1.metric("현재가", f"{ob.current_price:,}원" if ob.current_price else "-")
     c2.metric("전일대비", pct_str, delta=f"{pct:.2f}%")
+
+    c3, c4 = st.columns(2)
     c3.metric("체결강도", f"{ti:.1f}%" if ti else "-")
     c4.metric("매수비중", f"{ob.bid_ratio_pct}%")
 
-    # 2행: 거래량 / 시가·고가·저가 / 52주 고저 / VI
-    c5, c6, c7, c8 = st.columns(4)
+    c5, c6 = st.columns(2)
     if ob.volume:
         vol_str = f"{ob.volume:,}"
         rate_str = f"전일비 {ob.volume_rate:.1f}%" if ob.volume_rate else ""
@@ -261,42 +275,39 @@ def render_orderbook(ob: Orderbook, holding: StockHolding | None = None):
         c5.metric("거래량", "-")
 
     if ob.high_price:
-        c6.metric("시가/고가/저가",
-                   f"{ob.open_price:,} / {ob.high_price:,} / {ob.low_price:,}")
+        c6.metric("시/고/저", f"{ob.open_price:,} / {ob.high_price:,} / {ob.low_price:,}")
     else:
-        c6.metric("시가/고가/저가", "-")
+        c6.metric("시/고/저", "-")
 
+    c7, c8 = st.columns(2)
     if ob.w52_high:
         w52_pos = 0
         if ob.w52_high > ob.w52_low:
             w52_pos = round((ob.current_price - ob.w52_low) / (ob.w52_high - ob.w52_low) * 100)
-        c7.metric("52주 고/저",
-                   f"{ob.w52_high:,} / {ob.w52_low:,}",
-                   delta=f"현위치 {w52_pos}%")
+        c7.metric("52주 고/저", f"{ob.w52_high:,} / {ob.w52_low:,}", delta=f"현위치 {w52_pos}%")
     else:
         c7.metric("52주 고/저", "-")
 
     if ob.vi_price:
         vi_dist = round((ob.vi_price - ob.current_price) / ob.current_price * 100, 2) if ob.current_price else 0
-        c8.metric("VI 발동가",
-                   f"{ob.vi_price:,}원",
-                   delta=f"현재가 대비 {vi_dist:+.2f}%")
+        c8.metric("VI 발동가", f"{ob.vi_price:,}원", delta=f"{vi_dist:+.2f}%")
     else:
         c8.metric("VI 발동가", "-")
 
-    # 3행: 이동평균
+    # 이동평균
     if ob.ma5:
-        c9, c10, c11, c12 = st.columns(4)
         def _ma_delta(ma_val):
             if ma_val and ob.current_price:
                 gap = round((ob.current_price - ma_val) / ma_val * 100, 2)
                 return f"괴리 {gap:+.2f}%"
             return None
+
+        c9, c10 = st.columns(2)
         c9.metric("5일 이평", f"{ob.ma5:,}원", delta=_ma_delta(ob.ma5))
         c10.metric("20일 이평", f"{ob.ma20:,}원" if ob.ma20 else "-", delta=_ma_delta(ob.ma20))
-        c11.metric("60일 이평", f"{ob.ma60:,}원" if ob.ma60 else "-", delta=_ma_delta(ob.ma60))
 
-        # 정배열/역배열 판단
+        c11, c12 = st.columns(2)
+        c11.metric("60일 이평", f"{ob.ma60:,}원" if ob.ma60 else "-", delta=_ma_delta(ob.ma60))
         if ob.ma5 and ob.ma20:
             if ob.current_price > ob.ma5 > ob.ma20:
                 c12.metric("이평 배열", "정배열", delta="상승 추세")
@@ -338,7 +349,8 @@ def render_orderbook(ob: Orderbook, holding: StockHolding | None = None):
         )
 
     # 호가창 테이블 (10단계)
-    ask_col, mid_col, bid_col = st.columns([5, 1, 5])
+    st.caption(f"스프레드: {ob.spread:,}원 ({ob.spread_pct:.2f}%)" if ob.spread else "")
+    ask_col, bid_col = st.columns(2)
 
     # 목표가/손절가 가격
     target_p = holding.target_price if holding else 0
@@ -365,12 +377,6 @@ def render_orderbook(ob: Orderbook, holding: StockHolding | None = None):
                 f'</div>'
             )
         st.markdown("\n".join(rows), unsafe_allow_html=True)
-
-    with mid_col:
-        st.markdown("<br>" * 5, unsafe_allow_html=True)
-        spread = ob.spread
-        if spread:
-            st.caption(f"스프레드\n{spread:,}원\n({ob.spread_pct:.2f}%)")
 
     with bid_col:
         st.markdown("##### 매수 호가 🟢")
