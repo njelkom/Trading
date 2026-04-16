@@ -2,6 +2,8 @@ websockets>=12.0
 aiohttp>=3.9.0
 python-dotenv>=1.0.0
 streamlit>=1.30.0
+fastapi>=0.100.0
+uvicorn>=0.20.0
 
 # Claude AI 분석 사용 시 (선택)
 # anthropic>=0.40.0
