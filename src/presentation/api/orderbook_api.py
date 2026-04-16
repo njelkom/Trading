@@ -53,17 +53,15 @@ async def root():
     return {
         "name": "호가창 분석 API",
         "endpoints": {
-            "/api/orderbook": "호가 + 시세 + 분석 (GET ?stocks=005930,000660)",
-            "/api/price": "현재가 조회 (GET ?stock=005930)",
-            "/api/intensity": "체결강도 히스토리 (GET ?stock=005930)",
+            "/api/orderbook/{종목코드}": "호가 + 시세 + 분석 (예: /api/orderbook/005930,000660)",
+            "/api/price/{종목코드}": "현재가 조회 (예: /api/price/005930)",
+            "/api/intensity/{종목코드}": "체결강도 히스토리 (예: /api/intensity/005930)",
         }
     }
 
 
-@app.get("/api/orderbook")
-async def get_orderbook(
-    stocks: str = Query(default="005930", description="종목코드 (쉼표 구분)"),
-):
+@app.get("/api/orderbook/{stocks}")
+async def get_orderbook(stocks: str):
     """호가창 + 시세 + 분석 결과를 JSON으로 반환"""
     market_data = await get_adapter()
     stock_codes = [s.strip() for s in stocks.split(",") if s.strip()]
@@ -166,10 +164,8 @@ async def get_orderbook(
     return {"stocks": results}
 
 
-@app.get("/api/price")
-async def get_price(
-    stock: str = Query(description="종목코드"),
-):
+@app.get("/api/price/{stock}")
+async def get_price(stock: str):
     """현재가 간단 조회"""
     market_data = await get_adapter()
 
@@ -184,10 +180,8 @@ async def get_price(
     }
 
 
-@app.get("/api/intensity")
-async def get_intensity(
-    stock: str = Query(description="종목코드"),
-):
+@app.get("/api/intensity/{stock}")
+async def get_intensity(stock: str):
     """체결강도 히스토리 조회"""
     history = get_intensity_history(stock)
     return {
