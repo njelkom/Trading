@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from src.infrastructure.config.settings import load_settings
 from src.infrastructure.kis.kis_market_data_adapter import KISMarketDataAdapter
@@ -56,6 +57,7 @@ async def root():
             "/api/orderbook/{종목코드}": "호가 + 시세 + 분석 (예: /api/orderbook/005930,000660)",
             "/api/price/{종목코드}": "현재가 조회 (예: /api/price/005930)",
             "/api/intensity/{종목코드}": "체결강도 히스토리 (예: /api/intensity/005930)",
+            "/api/download/{종목코드}": "JSON 파일 다운로드 (예: /api/download/005930,000660)",
         }
     }
 
@@ -189,3 +191,19 @@ async def get_intensity(stock: str):
         "count": len(history),
         "history": history,
     }
+
+
+@app.get("/api/download/{stocks}")
+async def download_orderbook(stocks: str):
+    """호가창 데이터를 JSON 파일로 다운로드"""
+    data = await get_orderbook(stocks)
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"orderbook_{stocks.replace(',','_')}_{timestamp}.json"
+
+    return JSONResponse(
+        content=data,
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+        },
+    )
